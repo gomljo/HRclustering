@@ -43,7 +43,13 @@ def generate(type_, n_cluster=2, n_samples=500, n_features=2, n_clusters_per_cla
         # X's shape (n_samples, 2)
         # y's shape (n_samples,), so do reshape y' shape to (n_samples, 1)
 
+
         DIR_PATH = os.getcwd() + r'\data'
+
+        if n_features > 2:
+            return None, None, None
+        DIR_PATH = r'C:\Users\YoungHo\Documents\Cloud\ML_Project\HR_TREE\data'
+
         FILE_NAME = type_ + '_' + str(n_samples) + '_' + str(n_cluster) + '_' + str(n_features) + '.csv'
         PATH = os.path.join(DIR_PATH, FILE_NAME)
 
@@ -64,7 +70,13 @@ def generate(type_, n_cluster=2, n_samples=500, n_features=2, n_clusters_per_cla
         # n_features = n_features,
         # X's shape (n_samples, n_features)
         # y's shape (n_samples,), so do reshape y' shape to (n_samples, 1)
+
         DIR_PATH = os.getcwd() + r'\data'
+
+        if n_features > 2:
+            return None, None, None
+        DIR_PATH = r'C:\Users\YoungHo\Documents\Cloud\ML_Project\HR_TREE\data'
+
         FILE_NAME = type_ + '_' + str(n_samples) + '_' + str(n_cluster) + '_' + str(n_features) + '.csv'
         PATH = os.path.join(DIR_PATH, FILE_NAME)
 
@@ -85,7 +97,13 @@ def generate(type_, n_cluster=2, n_samples=500, n_features=2, n_clusters_per_cla
         # X's shape (n_samples, 2)
         # y's shape (n_samples,), so do reshape y' shape to (n_samples, 1)
 
+
         DIR_PATH = os.getcwd() + r'\data'
+
+        if n_features > 2:
+            return None, None, None
+        DIR_PATH = r'C:\Users\YoungHo\Documents\Cloud\ML_Project\HR_TREE\data'
+
         FILE_NAME = type_ + '_' + str(n_samples) + '_' + str(n_cluster) + '_' + str(n_features) + '.csv'
         PATH = os.path.join(DIR_PATH, FILE_NAME)
 
@@ -110,6 +128,7 @@ def generate(type_, n_cluster=2, n_samples=500, n_features=2, n_clusters_per_cla
 
 def plot_data(X, y):
 
+
     color = ['red', 'blue', 'green']
 
     for i in np.unique(y):
@@ -117,6 +136,8 @@ def plot_data(X, y):
         plt.scatter(X[mask, 0], X[mask, 1], label=str(i), cmap=i)
     plt.legend()
     plt.show()
+
+
     if X.shape[1] == 2:
         plt.scatter(X[:, 0], X[:, 1], c=y)
         plt.legend()
@@ -125,7 +146,16 @@ def plot_data(X, y):
 
 if __name__ == '__main__':
 
+
     index, X, y = generate(type_='moon', n_cluster=3, n_features=2, n_samples=500, n_clusters_per_class=1)
     # print(X.shape)
     # print(y)
     plot_data(X, y)
+
+    types = ['classification', 'moon', 'blobs', 'circles']
+
+    for t in types:
+        for n_feat in range(2,10):
+            for n_cls in range(2, 5):
+                index, X, y = generate(type_=t, n_cluster=n_cls, n_features=n_feat, n_samples=500, n_clusters_per_class=1)
+
