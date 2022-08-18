@@ -133,11 +133,7 @@ class HRHC:
         self.hierarchy_prototypes_index.appendleft(prototypes_index)
         self.index = self.hierarchy_prototypes_index[0]
 
-<<<<<<< HEAD
-    def make_hierarchy_hr(self, tau=0.01, min_samples=3):
-=======
     def make_hierarchy_hr(self, tau, min_samples=3):
->>>>>>> HR-clustering/master
 
         hyper_rectangles = list()
         if self.tau != tau:
@@ -154,8 +150,6 @@ class HRHC:
 
         self.get_prototypes()
 
-<<<<<<< HEAD
-=======
     def find_noise_test(self, x, index, tau, min_samples):
 
         hr = HyperRectangle(x=x, tau=tau, x_index=index)
@@ -213,7 +207,7 @@ class HRHC:
         self.get_prototypes()
 
     def report_change_tau(self):
-        tau = np.linspace(1e-3, 1, 1000)
+        tau = np.linspace(1e-3, 1, 100)
 
         DIR_PATH = os.getcwd() + r'\varying tau'
 
@@ -236,7 +230,6 @@ class HRHC:
                 plt.title('Num. of prototypes varying tau', fontsize=20)
                 plt.savefig(PATH)
 
->>>>>>> HR-clustering/master
     def fit_predict(self, min_samples=3):
 
         expected_proto = 500
@@ -244,7 +237,6 @@ class HRHC:
         self.make_hierarchy_hr(self.tau)
         print(len(self.prototypes))
         # print(len(self.hyper_rectangles))
-<<<<<<< HEAD
         print('expected number of prototype >= ', len(self.prototypes) / 2)
         expected_proto = len(self.prototypes) // 2
 
@@ -255,7 +247,6 @@ class HRHC:
         expected_proto = len(self.prototypes) // 2
 
         self.make_hierarchy_hr(tau=0.045, min_samples=31)
-=======
         print('expected number of prototype >= ', len(self.prototypes) // 2)
         expected_proto = len(self.prototypes) // 2
 
@@ -266,7 +257,6 @@ class HRHC:
         expected_proto = len(self.prototypes) // 2
 
         self.make_hierarchy_hr(tau=0.04, min_samples=31)
->>>>>>> HR-clustering/master
         print(len(self.prototypes))
         # print(len(self.hyper_rectangles))
         print('expected number of prototype >= ', len(self.prototypes) // 2)
