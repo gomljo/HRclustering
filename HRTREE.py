@@ -1,9 +1,9 @@
-from HR_TREE.Hyper_Rectangle import *
+from Hyper_Rectangle import *
 import matplotlib.pyplot as plt
 import numpy as np
 
 
-class HRTREE:
+class HR_TREE:
 
     def __init__(self, X=None, tau=0.1, min_samples=3):
 
@@ -17,7 +17,7 @@ class HRTREE:
     def make_hr_candidates(self, min_samples):
 
         for index, x in enumerate(self.X):
-            hr = HyperRectangle(x=x, x_index=index,tau=self.tau)
+            hr = HyperRectangle(x=x, x_index=index, tau=self.tau)
 
             for idx, neighbor in enumerate(self.X):
                 if index == idx:

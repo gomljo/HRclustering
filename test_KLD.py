@@ -40,12 +40,14 @@ def pdf_multivariate_gauss(x, mu, cov):
 
 def test_gauss_pdf():
     x = np.array([[0],[0]])
-    mu  = np.array([[0],[0]])
+    mu = np.array([[0],[0]])
     cov = np.eye(2)
 
     print(pdf_multivariate_gauss(x, mu, cov))
 
     # prints 0.15915494309189535
+
+
 mu1 = 0.21899386
 var1 = 0.00115031
 # var1 = 1
@@ -75,6 +77,7 @@ y1 = (1/np.sqrt(2*np.pi*var1)) * np.exp(-1 * ((x_range - mu1)**2 / (2*var1)))
 y2 = (1/np.sqrt(2*np.pi*var2)) * np.exp(-1 * ((x_range - mu2)**2 / (2*var2)))
 y3 = (1/np.sqrt(2*np.pi*var3)) * np.exp(-1 * ((x_range - mu3)**2 / (2*var3)))
 y4 = (1/np.sqrt(2*np.pi*var4)) * np.exp(-1 * ((x_range - mu4)**2 / (2*var4)))
+
 plt.plot(x_range, y1, c='red', label='hr1')
 plt.plot(x_range, y2, c='blue', label='hr2')
 plt.plot(x_range, y3, c='green', label='hr3')

@@ -1,5 +1,5 @@
-from HR_TREE.Hyper_Rectangle import HyperRectangle
-from copy import deepcopy
+from Hyper_Rectangle import HyperRectangle
+
 from collections import deque
 
 import numpy as np
@@ -56,24 +56,38 @@ class HRHC:
     #             hr_neighbor.y = hr.y
     #             self._cluster_labeling(hr_neighbor)
 
+    def get_hr_info(self, hr):
+
+        index = list(hr.covered_data_indexes)
+        index.sort()
+        hr = self.X[index]
+
+        hr_max = np.max(hr, axis=0)
+        hr_min = np.min(hr, axis=0)
+        hr_mean = np.mean(hr, axis=0)
+        hr_var = np.var(hr, axis=0)
+
+        return hr_max, hr_min, hr_mean, hr_var
+
+    @staticmethod
+    def get_density_range(x_min, x_max, num_of_dx=1000):
+        x_range = np.linspace(x_min, x_max, num_of_dx)
+        return x_range
+
+    @staticmethod
+    def get_prob_density(x_range, hr_var, hr_mean):
+        return (1 / np.sqrt(2 * np.pi * hr_var)) * np.exp(-1 * ((x_range - hr_mean) ** 2 / (2 * hr_var)))
+
+    @staticmethod
+    def get_multi_variate_prob_density(x_range, hr_var, hr_mean):
+        return (1 / np.sqrt(2 * np.pi * hr_var)) * np.exp(-1 * ((x_range - hr_mean) ** 2 / (2 * hr_var)))
+
     def get_info(self, hr1, hr2):
-        index = list(hr1.covered_data_indexes)
-        index.sort()
-        hr1 = self.X[index]
 
-        hr1_max = np.max(hr1, axis=0)
-        hr1_min = np.min(hr1, axis=0)
-        hr1_mean = np.mean(hr1, axis=0)
-        hr1_var = np.var(hr1, axis=0)
+        num_dx = 1000
 
-        index = list(hr2.covered_data_indexes)
-        index.sort()
-        hr2 = self.X[index]
-
-        hr2_max = np.max(hr2, axis=0)
-        hr2_min = np.min(hr2, axis=0)
-        hr2_mean = np.mean(hr2, axis=0)
-        hr2_var = np.var(hr2, axis=0)
+        hr1_max, hr1_min, hr1_mean, hr1_var = self.get_hr_info(hr1)
+        hr2_max, hr2_min, hr2_mean, hr2_var = self.get_hr_info(hr2)
 
         if hr2_max >= hr1_max:
             x_max = hr2_max
@@ -85,19 +99,52 @@ class HRHC:
         else:
             x_min = hr1_min
 
-        num_dx = 1000
-
-        x_range = np.linspace(x_min, x_max, num_dx)
+        # get probability density need to range
+        x_range = self.get_density_range(x_min, x_max, num_of_dx=num_dx)
 
         dx = (x_max - x_min) / num_dx
 
-        y1 = (1 / np.sqrt(2 * np.pi * hr1_var)) * np.exp(-1 * ((x_range - hr1_mean) ** 2 / (2 * hr1_var)))
-        y2 = (1 / np.sqrt(2 * np.pi * hr2_var)) * np.exp(-1 * ((x_range - hr2_mean) ** 2 / (2 * hr2_var)))
+        y1 = self.get_prob_density(x_range, hr1_var, hr1_mean)
+        y2 = self.get_prob_density(x_range, hr2_var, hr2_mean)
 
         return y1, y2, dx, x_min, x_max
 
     def KLD(self, dist1, dist2, dx):
+        # calculate KL-Divergence between dist1 and dist2
         return np.sum(np.where(dist1 != 0, dist1 * np.log(dist1 / dist2) * dx, 0))
+
+    def merging(self, hr1, hr2, x_min, x_max):
+        """
+        question on this process
+        which point can be prototype for merging two hyper rectangle
+
+        solution (1) assign to new hr's prototype to hr1's prototype
+        solution (2) assign to new hr's prototype to hr2's prototype
+        solution (1) assign to new hr's prototype to mean value of hr1's prototype and hr2's prototype
+        """
+        # new_hr = HyperRectangle(x=hr1.hr_mid, x_index=hr1.x_idx, tau=)
+
+    def make_cluster(self):
+
+        # this method makes sub cluster.
+        # Each execution makes cluster hierarchy
+        # and need to eliminate merging hyper rectangles. => use self.in_data
+        for idx1, hr1 in enumerate(self.hyper_rectangles):
+            max_kld_exp = 0
+            max_kld_idx = 0
+            for idx2, hr2 in enumerate(self.hyper_rectangles):
+                if idx1 == idx2:
+                    continue
+                # variable y is list type and represent normal distribution on min value and max value of two hyper
+                # rectangles which hr1 and hr2
+                y1, y2, dx, min_x, max_x = self.get_info(hr1, hr2)
+
+                kld_exp = np.exp(-self.KLD(y1, y2, dx))
+
+                if max_kld_exp < kld_exp:
+                    max_kld_exp = kld_exp
+                    max_kld_idx = idx2
+
 
     def find_noise(self, x, index, min_samples):
 
@@ -144,39 +191,13 @@ class HRHC:
             if hr is not None:
                 hyper_rectangles.append(hr)
 
-    def merging(self, hr1, hr2):
-
-        new_hr = HyperRectangle()
-
-
-    def make_cluster(self):
-
-        # this method makes sub cluster.
-        # Each execution makes cluster hierarchy
-        # and need to eliminate merging hyper rectangles. => use self.in_data
-        for idx1, hr1 in enumerate(self.hyper_rectangles):
-            max_kld_exp = 0
-            max_kld_idx = 0
-            for idx2, hr2 in enumerate(self.hyper_rectangles):
-                if idx1 == idx2:
-                    continue
-                # variable y is list type and represent normal distribution on min value and max value of two hyper
-                # rectangles which hr1 and hr2
-                y1, y2, dx = self.get_info(hr1, hr2)
-
-                kld_exp = np.exp(-self.KLD(y1, y2, dx))
-
-                if max_kld_exp < kld_exp:
-                    max_kld_exp = kld_exp
-                    max_kld_idx = idx2
-
     def predict(self, X):
 
         n_samples = X.shape[0]
         y_new = np.ones(shape=n_samples, dtype=int) * -1
 
         for i, data in enumerate(X):
-            new_hr = HyperRectangle(x=data, tau=self.tau, index=i)
+            new_hr = HyperRectangle(x=data, tau=self.tau, x_index=i)
 
             for j, hr in enumerate(self.hyper_rectangles):
                 if hr.y == -1:

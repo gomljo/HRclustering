@@ -8,17 +8,23 @@ import os
 
 def generate(type_, n_cluster=2, n_samples=500, n_features=2, n_clusters_per_class=1, random_state=42):
 
+    index = None
+    X = None
+    y = None
+
     if type_ is 'classification':
         # generate classification data
         # n_features is up to 10?
         # X's shape (n_samples, n_features)
         # y's shape (n_samples,), so do reshape y' shape to (n_samples, 1)
 
-        DIR_PATH = r'C:\Users\YoungHo\Documents\Cloud\ML_Project\HR_TREE\data'
+        DIR_PATH = os.getcwd() + r'\data'
         FILE_NAME = type_ + '_' + str(n_samples) + '_' + str(n_cluster) + '_' + str(n_features) + '.csv'
         PATH = os.path.join(DIR_PATH, FILE_NAME)
+
         X, y = make_classification(n_samples, n_features, n_classes=n_cluster, n_informative=n_features,
                                    random_state=random_state, n_clusters_per_class=n_clusters_per_class, n_redundant=0, n_repeated=0)
+        index = np.arange(n_samples)
         y = y.reshape(-1, 1)
         feature_list = []
         for i in range(n_features):
@@ -37,9 +43,10 @@ def generate(type_, n_cluster=2, n_samples=500, n_features=2, n_clusters_per_cla
         # X's shape (n_samples, 2)
         # y's shape (n_samples,), so do reshape y' shape to (n_samples, 1)
 
-        DIR_PATH = r'C:\Users\YoungHo\Documents\Cloud\ML_Project\HR_TREE\data'
+        DIR_PATH = os.getcwd() + r'\data'
         FILE_NAME = type_ + '_' + str(n_samples) + '_' + str(n_cluster) + '_' + str(n_features) + '.csv'
         PATH = os.path.join(DIR_PATH, FILE_NAME)
+
         X, y = make_moons(n_samples=n_samples, random_state=random_state)
         index = np.arange(n_samples)
         y = y.reshape(-1, 1)
@@ -57,7 +64,7 @@ def generate(type_, n_cluster=2, n_samples=500, n_features=2, n_clusters_per_cla
         # n_features = n_features,
         # X's shape (n_samples, n_features)
         # y's shape (n_samples,), so do reshape y' shape to (n_samples, 1)
-        DIR_PATH = r'C:\Users\YoungHo\Documents\Cloud\ML_Project\HR_TREE\data'
+        DIR_PATH = os.getcwd() + r'\data'
         FILE_NAME = type_ + '_' + str(n_samples) + '_' + str(n_cluster) + '_' + str(n_features) + '.csv'
         PATH = os.path.join(DIR_PATH, FILE_NAME)
 
@@ -78,7 +85,7 @@ def generate(type_, n_cluster=2, n_samples=500, n_features=2, n_clusters_per_cla
         # X's shape (n_samples, 2)
         # y's shape (n_samples,), so do reshape y' shape to (n_samples, 1)
 
-        DIR_PATH = r'C:\Users\YoungHo\Documents\Cloud\ML_Project\HR_TREE\data'
+        DIR_PATH = os.getcwd() + r'\data'
         FILE_NAME = type_ + '_' + str(n_samples) + '_' + str(n_cluster) + '_' + str(n_features) + '.csv'
         PATH = os.path.join(DIR_PATH, FILE_NAME)
 
@@ -105,14 +112,20 @@ def plot_data(X, y):
 
     color = ['red', 'blue', 'green']
 
+    for i in np.unique(y):
+        mask = np.where(y==i)
+        plt.scatter(X[mask, 0], X[mask, 1], label=str(i), cmap=i)
+    plt.legend()
+    plt.show()
     if X.shape[1] == 2:
-        plt.scatter(X[:,0], X[:, 1], c=y)
+        plt.scatter(X[:, 0], X[:, 1], c=y)
+        plt.legend()
         plt.show()
 
 
 if __name__ == '__main__':
 
-    index, X, y = generate(type_='blobs', n_cluster=3, n_features=2, n_samples=500, n_clusters_per_class=1)
+    index, X, y = generate(type_='moon', n_cluster=3, n_features=2, n_samples=500, n_clusters_per_class=1)
     # print(X.shape)
     # print(y)
     plot_data(X, y)
