@@ -118,10 +118,12 @@ class HRHC:
         question on this process
         which point can be prototype for merging two hyper rectangle
 
-        solution (1) assign to new hr's prototype to hr1's prototype
-        solution (2) assign to new hr's prototype to hr2's prototype
-        solution (1) assign to new hr's prototype to mean value of hr1's prototype and hr2's prototype
+        solution (1) assign to new hr's prototype to hr1's prototype (X)
+        solution (2) assign to new hr's prototype to hr2's prototype (X)
+        solution (3) assign to new hr's prototype to mean value of hr1's prototype and hr2's prototype (O)
         """
+        new_tau = (x_max - x_min) / 2.0
+
         # new_hr = HyperRectangle(x=hr1.hr_mid, x_index=hr1.x_idx, tau=)
 
     def make_cluster(self):
