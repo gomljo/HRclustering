@@ -1,131 +1,117 @@
-from LearnKit.AnomalyDetection.HyperRectangleDBSCAN import HyperRectangleClustering
+from HRclustering.HR_clustering import HR_clustering
 from sklearn.cluster import DBSCAN
 from sklearn.datasets import load_iris, load_wine, load_breast_cancer
+from HRclustering.make_data import *
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import accuracy_score
+from sklearn.metrics.cluster import adjusted_rand_score
+from pathlib import Path
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
+import os
+
+import matplotlib.pyplot as plt
 
 scaler = MinMaxScaler()
 
-data = load_wine()
+# dataset = load_iris()
+types = ['classification', 'moon', 'blobs', 'circles']
+n_clusters = 3
+n_features = 2
+samples = 500
+n_clusters_per_class = 1
+types_num = 3
+idx, x, y = generate(type_=types[types_num], n_cluster=n_clusters, n_features=n_features, n_samples=samples,
+                     n_clusters_per_class=n_clusters_per_class)
+plot_data(x, y)
+# x_data = dataset['data']
+# y_data = dataset['target']
+# label_names_ = dataset['target_names']
 
-print(data)
+x_data = x
+y_data = y.ravel()
+# label_names_ = np.unique(y)
 
-
-dataset = load_iris()
-
-x_data = dataset['data']
-y_data = dataset['target']
-label_names_ = dataset['target_names']
 x_data = scaler.fit_transform(x_data)
-cv = 5
-kf = StratifiedKFold(n_splits=cv, shuffle=True)
 
-epsilon = np.arange(0.1, 1, 0.001)
+interval = [10]
 
-min_samples = np.arange(2, 11, 1)
+label_mask = []
 
-dbscan = np.zeros((2, 2, 3))
-hrdbscan = np.zeros((2, 2, 3))
+for label in np.unique(y_data):
+    mask = list(np.where(y_data == label))
+    label_mask.append(mask)
 
-for eps in epsilon:
-    for min_sam in min_samples:
-        temp_db_acc = 0
-        temp_db_acc_ = 0
-        temp_acc = 0
-        temp_acc_ = 0
+for itv in interval:
+    epsilon = np.linspace(0.001, 1.0, itv)
 
-        for train_ix, test_ix in kf.split(x_data, y_data):
-            train_x = x_data[train_ix]
-            train_y = y_data[train_ix]
+    min_samples = np.arange(2, len(x_data), 1)
 
-            test_x = x_data[test_ix]
-            test_y = y_data[test_ix]
-            model2 = DBSCAN(eps=eps, min_samples=min_sam)
+    DIR_PATH = r'C:\Users\YoungHo\Documents\Cloud\ML_Project\HRclustering\data'
+    DATA_NAME = types[types_num] + '_' + str(n_clusters) + '_' + str(n_features) + '_' + str(samples)# types_n_clusters_n_features
+    # CONDITION = r'ACC_eps_interval_{}'.format(itv)
+    CONDITION2 = r'ARI_eps_interval_{}'.format(itv)
+    DIR_PATH = os.path.join(DIR_PATH, DATA_NAME)
+    # DIR_PATH_ACC = os.path.join(DIR_PATH, CONDITION)
+    DIR_PATH_ARI = os.path.join(DIR_PATH, CONDITION2)
 
-            model2.fit(train_x)
-            db_acc = accuracy_score(train_y, model2.labels_)
-            temp_db_acc += db_acc
+    # if not os.path.exists(DIR_PATH_ACC):
+    #     os.makedirs(DIR_PATH_ACC)
 
-            y_pred_ = model2.fit_predict(test_x)
-            db_acc_ = accuracy_score(test_y, y_pred_)
-            temp_db_acc_ += db_acc_
+    if not os.path.exists(DIR_PATH_ARI):
+        os.makedirs(DIR_PATH_ARI)
 
-            model2 = HyperRectangleClustering(X=train_x, tau=eps)
+    for eps in epsilon:
 
+        hrdbscan_acc = []
+        dbscan_acc = []
+
+        hrdbscan_ARI = []
+        dbscan_ARI = []
+
+        for min_sam in min_samples:
+
+            model1 = DBSCAN(eps=eps, min_samples=min_sam)
+            model1.fit(x_data)
+            dbscan_ARI.append(adjusted_rand_score(y_data, model1.labels_))
+
+            model2 = HR_clustering(X=x_data, tau=eps)
             model2.fit_predict(min_samples=min_sam)
-            acc = accuracy_score(train_y, model2.labels_)
-            temp_acc += acc
+            hrdbscan_ARI.append(adjusted_rand_score(y_data, model2.labels_))
 
-            y_pred_ = model2.predict(test_x)
-            acc_ = accuracy_score(test_y, y_pred_)
-            temp_acc_ += acc_
+            # for mask in label_mask:
+            #
+            #     unique_val_1, cnt_1 = np.unique(model1.labels_[mask], return_counts=True)
+            #     model1.labels_[mask] = unique_val_1[np.argmax(cnt_1, axis=0)]
+            #
+            #     unique_val_2, cnt_2 = np.unique(model2.labels_[mask], return_counts=True)
+            #     model2.labels_[mask] = unique_val_2[np.argmax(cnt_2, axis=0)]
 
-        temp_db_acc /= cv
-        temp_db_acc_ /= cv
-        if temp_db_acc > dbscan[0, 0, 0]:
-            dbscan[0, 0, 0] = temp_db_acc
-            dbscan[0, 0, 1] = eps
-            dbscan[0, 0, 2] = min_sam
+            # dbscan_acc.append(accuracy_score(y_data, model1.labels_))
+            # hrdbscan_acc.append(accuracy_score(y_data, model2.labels_))
 
-            dbscan[0, 1, 0] = temp_db_acc_
-            dbscan[0, 1, 1] = eps
-            dbscan[0, 1, 2] = min_sam
+        # FILE_NAME = 'eps_{:.3f}_min_sample_{}_{}.png'.format(eps, np.min(min_samples), np.max(min_samples))
+        # PATH_ACC = os.path.join(DIR_PATH_ACC, FILE_NAME)
+        # plt.plot(np.arange(len(min_samples)), dbscan_acc, c='red', label='DBSCAN')
+        # plt.plot(np.arange(len(min_samples)), hrdbscan_acc, c='blue', label='HR-DBSCAN')
+        # plt.ylabel('Accuracy', fontsize=15)
+        # plt.ylim(0.0, 1.1)
+        # plt.xlabel('min samples', fontsize=15)
+        # plt.title('test on epsilon {}'.format(eps), fontsize=20)
+        # plt.grid()
+        # plt.legend()
+        # plt.savefig(PATH_ACC)
+        # plt.close()
 
-        if temp_db_acc_ > dbscan[1,1,0]:
-            dbscan[1, 0, 0] = temp_db_acc
-            dbscan[1, 0, 1] = eps
-            dbscan[1, 0, 2] = min_sam
-
-            dbscan[1,1,0] = temp_db_acc_
-            dbscan[1,1,1] = eps
-            dbscan[1,1,2] = min_sam
-
-        temp_acc /= cv
-        temp_acc_ /= cv
-        if temp_acc > hrdbscan[0, 0, 0]:
-            hrdbscan[0, 0, 0] = temp_acc
-            hrdbscan[0, 0, 1] = eps
-            hrdbscan[0, 0, 2] = min_sam
-
-            hrdbscan[0, 1, 0] = temp_acc_
-            hrdbscan[0, 1, 1] = eps
-            hrdbscan[0, 1, 2] = min_sam
-
-        if temp_acc_ > hrdbscan[1, 1, 0]:
-            hrdbscan[1, 0, 0] = temp_acc
-            hrdbscan[1, 0, 1] = eps
-            hrdbscan[1, 0, 2] = min_sam
-
-            hrdbscan[1, 1, 0] = temp_acc_
-            hrdbscan[1, 1, 1] = eps
-            hrdbscan[1, 1, 2] = min_sam
-
-print('dbscan')
-
-print('train')
-print('best_db_acc', dbscan[0, 0, 0])
-print('best_db_eps', dbscan[0, 0, 1])
-print('best_db_min_sam', dbscan[0,0, 2])
-
-print('test')
-
-print('best_db_acc', dbscan[0, 1, 0])
-print('best_db_eps', dbscan[0, 1, 1])
-print('best_db_min_sam', dbscan[0, 1, 2])
-
-print('hrdbscan')
-
-print('train')
-print('best_db_acc', hrdbscan[1, 0, 0])
-print('best_db_eps', hrdbscan[1, 0, 1])
-print('best_db_min_sam', hrdbscan[1,0, 2])
-
-print('test')
-
-print('best_db_acc', hrdbscan[1, 1, 0])
-print('best_db_eps', hrdbscan[1, 1, 1])
-print('best_db_min_sam', hrdbscan[1, 1, 2])
-
-f = open('', 'w')
+        FILE_NAME = 'eps_{:.3f}_min_sample_{}_{}.png'.format(eps, np.min(min_samples), np.max(min_samples))
+        PATH_ARI = os.path.join(DIR_PATH_ARI, FILE_NAME)
+        plt.plot(np.arange(len(min_samples)), dbscan_ARI, c='red', label='DBSCAN')
+        plt.plot(np.arange(len(min_samples)), hrdbscan_ARI, c='blue', label='HR-DBSCAN')
+        plt.ylabel('Adjusted Rand Index', fontsize=15)
+        plt.ylim(0.0, 1.0)
+        plt.xlabel('min samples', fontsize=15)
+        plt.title('test on epsilon {}'.format(eps), fontsize=20)
+        plt.grid()
+        plt.legend()
+        plt.savefig(PATH_ARI)
+        plt.close()

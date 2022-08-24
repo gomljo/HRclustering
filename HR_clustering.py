@@ -46,7 +46,7 @@ class HR_clustering:
         core_samples_indices = list()
         for hr in self.hyper_rectangles:
             if hr.y != -1:
-                core_samples_indices.append(hr.hr_mid_index)
+                core_samples_indices.append(hr.x_idx)
 
         self.core_sample_indices_ = core_samples_indices
         return y_pred
@@ -54,10 +54,6 @@ class HR_clustering:
     def make_clusters(self):
 
         cluster_index = 0
-
-        hr_list = deepcopy(self.hyper_rectangles)
-
-        hr_comp_list = list(combinations(hr_list, 2))
 
         for hr in self.hyper_rectangles:
             if hr.y is not None:
@@ -85,7 +81,7 @@ class HR_clustering:
 
         for index, x in enumerate(self.X_data):
             # print(x)
-            hr = HyperRectangle(x=x, tau=self.tau, index=index)
+            hr = HyperRectangle(x=x, tau=self.tau, x_index=index)
 
             for idx, neighbor in enumerate(self.X_data):
                 if index == idx:

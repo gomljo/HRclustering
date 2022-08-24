@@ -1,13 +1,220 @@
-from Hyper_Rectangle import HyperRectangle
-from copy import deepcopy
+
+# import self defined class
+from HRclustering.Hyper_Rectangle import HyperRectangle
+
+# import utility libraries
 from collections import deque
 from tqdm import tqdm, trange
+from copy import deepcopy
 from time import sleep
+
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 class HRHC:
+
+    def __init__(self, X=None, tau=0.1, index=None, min_samples=3):
+        self.X = X
+
+        self.tau = tau
+        self.min_samples = min_samples
+
+        self.labels_ = None
+        self.core_sample_indices_ = None
+
+        self.hyper_rectangles = deque()
+        self.in_data = set([])
+
+        self.hierarchy_prototypes = deque()
+        self.hierarchy_prototypes.appendleft(X)
+        self.hierarchy_prototypes_index = deque()
+        self.hierarchy_prototypes_index.appendleft(index)
+        self.do_change = False
+
+    def find_noise(self, x, index, min_samples):
+
+        hr = HyperRectangle(x=x, tau=self.tau, x_index=index)
+        if len(self.hyper_rectangles):
+            # print('merging')
+            for idx, neighbor, neighbor_hr in zip(self.hierarchy_prototypes_index[0], self.hierarchy_prototypes[0], self.hyper_rectangles[0]):
+
+                if index == idx:
+                    continue
+                elif idx in self.in_data:
+                    continue
+                dup_ind = hr.is_include(neighbor, idx)
+                if dup_ind is not None:
+                    self.in_data.add(dup_ind)
+                    if neighbor_hr:
+                        self.merging_hr(hr, neighbor_hr)
+        else:
+            # print('initial stage progressed...')
+            for idx, neighbor in zip(self.hierarchy_prototypes_index[0], self.hierarchy_prototypes[0]):
+
+                if index == idx:
+                    continue
+                elif idx in self.in_data:
+                    continue
+                dup_ind = hr.is_include(neighbor, idx)
+                if dup_ind is not None:
+                    self.in_data.add(dup_ind)
+
+        if len(hr.covered_data_indexes) < min_samples:
+            # print('1')
+            hr.y = -1
+            return None
+
+        return hr
+
+    @staticmethod
+    def merging_hr(hr1, hr2):
+
+        hr1.covered_data_indexes = hr1.covered_data_indexes.union(hr2.covered_data_indexes)
+
+    def get_prototypes(self):
+        prototypes = list()
+        prototypes_index = list()
+
+        for hr in self.hyper_rectangles[0]:
+            prototypes.append(hr.hr_mid)
+            prototypes_index.append(hr.x_idx)
+
+        prototypes = np.array(prototypes)
+        prototypes_index = np.array(prototypes_index)
+
+        self.hierarchy_prototypes.appendleft(prototypes)
+        self.hierarchy_prototypes_index.appendleft(prototypes_index)
+
+    def make_hierarchy_hr(self, tau, min_samples=3):
+
+        hyper_rectangles = list()
+        if self.tau != tau:
+            self.tau = tau
+        if self.min_samples != min_samples:
+            self.min_samples = min_samples
+        for index, x in zip(self.hierarchy_prototypes_index[0], self.hierarchy_prototypes[0]):
+            if index in self.in_data:
+                continue
+            hr = self.find_noise(x=x, index=index, min_samples=min_samples)
+            if hr is not None:
+                hyper_rectangles.append(hr)
+        # print(len(hyper_rectangles))
+        self.hyper_rectangles.appendleft(hyper_rectangles)
+        self.get_prototypes()
+        self.in_data = set([])
+
+    def fit_predict(self, min_samples=3):
+
+        interval = 100
+
+        min_sam = min_samples
+        # max_sam = len(self.hierarchy_prototypes)
+        stage = 1
+
+        while len(self.hierarchy_prototypes[0]) != 1:
+            tau_ = np.linspace(self.tau, 1, interval)
+            print('stage {} is progressed...'.format(stage))
+
+            self.make_hierarchy_hr(tau=self.tau, min_samples=min_sam)
+            # print(len(self.hierarchy_prototypes[0]))
+            # print('-' * 50)
+            # print('Num. of prototypes: {}'.format(len(self.hierarchy_prototypes[0])))
+            # cnt = 0
+            # for idx, hr in enumerate(self.hyper_rectangles[0]):
+            #     print('Num. of data in hyper rectangle {}: {}'.format(idx, len(hr.covered_data_indexes)))
+            #     print('prototype in hyper rectangle {}: index {}, data {}'.format(idx, hr.x_idx, hr.hr_mid))
+            #     cnt += len(hr.covered_data_indexes)
+            # print('total num. of data in hyper rectangles: {}'.format(cnt))
+            # print('Next step\'s prototype indices')
+            # print(self.hierarchy_prototypes_index[0])
+            # print('Next step\'s prototypes')
+            # print(self.hierarchy_prototypes[0])
+            # print('-' * 50)
+
+            if (len(self.hierarchy_prototypes[0]) == len(self.hierarchy_prototypes[1])) or (len(self.hierarchy_prototypes[0]) == 0):
+                print('calibrate tau...')
+                # print(self.hyper_rectangles)
+                self.hierarchy_prototypes.popleft()
+                self.hierarchy_prototypes_index.popleft()
+                self.hyper_rectangles.popleft()
+
+                is_change = False
+                for idx, t_ in enumerate(tau_):
+                    # print(t_)
+                    # print(self.hyper_rectangles[0])
+
+                    self.make_hierarchy_hr(tau=t_, min_samples=min_sam)
+                    # if not len(self.hierarchy_prototypes[0]):
+                    #     print('-' * 50)
+                    #     print('Num. of prototypes: {}'.format(len(self.hierarchy_prototypes[1])))
+                    #     cnt = 0
+                    #     for idx, hr in enumerate(self.hyper_rectangles[1]):
+                    #         print('Num. of data in hyper rectangle {}: {}'.format(idx, hr.covered_data_indexes))
+                    #         print('prototype in hyper rectangle {}: index {}, data {}'.format(idx, hr.x_idx, hr.hr_mid))
+                    #         cnt += len(hr.covered_data_indexes)
+                    #     print('total num. of data in hyper rectangles: {}'.format(cnt))
+                    #     print('Next step\'s prototype indices')
+                    #     print(self.hierarchy_prototypes_index[1])
+                    #     print('Next step\'s prototypes')
+                    #     print(self.hierarchy_prototypes[1])
+                    #     print('-' * 50)
+
+                    if len(self.hierarchy_prototypes[0]) != len(self.hierarchy_prototypes[1]) and (len(self.hierarchy_prototypes[0]) !=0):
+                        print('Find proper tau value')
+                        print(self.hyper_rectangles[0])
+                        print('tau: {}'.format(t_))
+                        print()
+                        self.tau = t_
+                        is_change = True
+                        break
+                    else:
+                        self.hierarchy_prototypes.popleft()
+                        self.hierarchy_prototypes_index.popleft()
+                        self.hyper_rectangles.popleft()
+                if not is_change:
+                    print('Number of Prototype does not changed in stage {}.'.format(stage))
+                    print('Error: Model needs to changing self.tau = {} or self.min_samples = {}.'.format(self.tau, self.min_samples))
+                    break
+
+            print('-' * 50)
+            print('Num. of prototypes: {}'.format(len(self.hierarchy_prototypes[0])))
+            cnt = 0
+            for idx, hr in enumerate(self.hyper_rectangles[0]):
+                print('Num. of data in hyper rectangle {}: {}'.format(idx, len(hr.covered_data_indexes)))
+                print('prototype in hyper rectangle {}: index {}, data {}'.format(idx, hr.x_idx, hr.hr_mid))
+                cnt += len(hr.covered_data_indexes)
+            print('total num. of data in hyper rectangles: {}'.format(cnt))
+            print('Next step\'s prototype indices')
+            print(self.hierarchy_prototypes_index[0])
+            print('Next step\'s prototypes')
+            print(self.hierarchy_prototypes[0])
+            print('-' * 50)
+            # self.tau *= 2
+            stage += 1
+
+    def predict(self, X):
+
+        n_samples = X.shape[0]
+        y_new = np.ones(shape=n_samples, dtype=int) * -1
+
+        for i, data in enumerate(X):
+            new_hr = HyperRectangle(x=data, tau=self.tau, x_index=i)
+
+            for j, hr in enumerate(self.hyper_rectangles):
+                if hr.y == -1:
+                    continue
+
+                if new_hr.is_include(hr.hr_mid, None):
+                    y_new[i] = hr.y
+
+                    break
+
+        return y_new
+
+
+class HRHC_TEST:
 
     def __init__(self, X=None, tau=0.1, index=None, min_samples=3):
 
@@ -26,129 +233,7 @@ class HRHC:
         self.index = index
         self.hierarchy_prototypes = deque()
         self.hierarchy_prototypes_index = deque()
-
-
-
-
-    # self.prototypes = list()
-    # def init_hr_list(self):
-    #
-    #     for hr_id in self.prototypes:
-
-
-    # def make_clusters(self):
-    #
-    #     cluster_index = 0
-    #
-    #     hr_list = deepcopy(self.hyper_rectangles)
-    #
-    #     hr_comp_list = list(combinations(hr_list, 2))
-    #
-    #     for hr in self.hyper_rectangles:
-    #         if hr.y is not None:
-    #             continue
-    #
-    #         hr.y = cluster_index
-    #
-    #         self._cluster_labeling(hr)
-    #
-    #         cluster_index += 1
-
-    # def _cluster_labeling(self, hr):
-    #
-    #     for neighbor_index in hr.covered_data_indexes:
-    #         hr_neighbor = self.hyper_rectangles[neighbor_index]
-    #         if hr_neighbor.y == -1:
-    #             hr_neighbor.y = hr.y
-    #             continue
-    #
-    #         if hr_neighbor.y is None:
-    #             hr_neighbor.y = hr.y
-    #             self._cluster_labeling(hr_neighbor)
-
-
-    def calc_statistic(self, hr1, hr2):
-        index = list(hr1.covered_data_indexes)
-        index.sort()
-        hr1 = self.X[index]
-
-        index = list(hr1.covered_data_indexes)
-        index.sort()
-        hr2 = self.X[index]
-
-        hr1_max = np.max(hr1, axis=0)
-        hr1_min = np.min(hr1, axis=0)
-        hr1_mean = np.mean(hr1, axis=0)
-        hr1_var = np.var(hr1, axis=0)
-
-        hr1_statistic = [hr1_max, hr1_min, hr1_mean, hr1_var]
-
-        hr2_max = np.max(hr2, axis=0)
-        hr2_min = np.min(hr2, axis=0)
-        hr2_mean = np.mean(hr2, axis=0)
-        hr2_var = np.var(hr2, axis=0)
-
-        hr2_statistic = [hr2_max, hr2_min, hr2_mean, hr2_var]
-
-        return hr1_statistic, hr2_statistic
-
-    def KLD(self, dist1, dist2, dx):
-        return np.sum(np.where(dist1 != 0, dist1 * np.log(dist1 / dist2) * dx, 0))
-
-    def find_noise(self, x, index, min_samples):
-
-        hr = HyperRectangle(x=x, tau=self.tau, x_index=index)
-
-        for idx, neighbor in zip(self.index, self.prototypes):
-
-            if index == idx:
-                continue
-            # elif idx in self.in_data:
-            #     continue
-            dup_ind = hr.is_include(neighbor, idx)
-            # if dup_ind is not None:
-            #     self.in_data.add(dup_ind)
-
-        if len(hr.covered_data_indexes) < min_samples:
-            # print('1')
-            hr.y = -1
-            return None
-
-        return hr
-
-    def get_prototypes(self):
-        prototypes = list()
-        prototypes_index = list()
-
-        for hr in self.hyper_rectangles[0]:
-            prototypes.append(hr.hr_mid)
-            prototypes_index.append(hr.x_idx)
-
-        prototypes = np.array(prototypes)
-        prototypes_index = np.array(prototypes_index)
-
-        self.prototypes = prototypes
-
-        self.hierarchy_prototypes.appendleft(prototypes)
-        self.hierarchy_prototypes_index.appendleft(prototypes_index)
-        self.index = self.hierarchy_prototypes_index[0]
-
-    def make_hierarchy_hr(self, tau, min_samples=3):
-
-        hyper_rectangles = list()
-        if self.tau != tau:
-            self.tau = tau
-        if self.min_samples != min_samples:
-            self.min_samples = min_samples
-        for index, x in zip(self.index, self.prototypes):
-
-            hr = self.find_noise(x=x, index=index, min_samples=min_samples)
-            if hr is not None:
-                hyper_rectangles.append(hr)
-
-        self.hyper_rectangles.appendleft(hyper_rectangles)
-
-        self.get_prototypes()
+        self.do_change = False
 
     def find_noise_test(self, x, index, tau, min_samples):
 
@@ -165,13 +250,12 @@ class HRHC:
             #     self.in_data.add(dup_ind)
 
         if len(hr.covered_data_indexes) < min_samples:
-
             hr.y = -1
             return None
 
         return hr
 
-    def get_prototypes_test(self):
+    def get_prototypes_test(self, change=True):
         prototypes = list()
         prototypes_index = list()
 
@@ -198,13 +282,24 @@ class HRHC:
             self.min_samples = min_samples
         for index, x in zip(self.index, self.prototypes):
 
-            hr = self.find_noise(x=x, index=index, min_samples=min_samples)
+            hr = self.find_noise_test(x=x, index=index, min_samples=min_samples)
             if hr is not None:
                 hyper_rectangles.append(hr)
 
         self.hyper_rectangles.appendleft(hyper_rectangles)
 
-        self.get_prototypes()
+        self.get_prototypes_test()
+
+    def fit_predict_test(self, tau, min_samples=3, stage=5):
+
+        expected_proto = 500
+
+        for step in range(stage):
+            self.make_hierarchy_hr_test(tau)
+            print(len(self.prototypes))
+            # print(len(self.hyper_rectangles))
+            print('expected number of prototype >= ', len(self.prototypes) / 2)
+            expected_proto = len(self.prototypes) // 2
 
     def report_change_tau(self):
         tau = np.linspace(1e-3, 1, 100)
@@ -222,71 +317,13 @@ class HRHC:
                 n_proto.append(len(self.hyper_rectangles[0]))
                 sleep(0.01)
 
-                FILE_NAME = 'Hierarchy {}'.format(i+1)
+                FILE_NAME = 'Hierarchy {}'.format(i + 1)
                 PATH = os.path.join(DIR_PATH, FILE_NAME)
                 plt.plot(tau, n_proto)
                 plt.xlabel('tau', fontsize=15)
                 plt.ylabel('Num. of prototypes', fontsize=15)
                 plt.title('Num. of prototypes varying tau', fontsize=20)
                 plt.savefig(PATH)
-
-    def fit_predict(self, min_samples=3):
-
-        expected_proto = 500
-
-        self.make_hierarchy_hr(self.tau)
-        print(len(self.prototypes))
-        # print(len(self.hyper_rectangles))
-        print('expected number of prototype >= ', len(self.prototypes) / 2)
-        expected_proto = len(self.prototypes) // 2
-
-        self.make_hierarchy_hr(tau=0.04, min_samples=24)
-        print(len(self.prototypes))
-        # print(len(self.hyper_rectangles))
-        print('expected number of prototype >= ', len(self.prototypes) / 2)
-        expected_proto = len(self.prototypes) // 2
-
-        self.make_hierarchy_hr(tau=0.045, min_samples=31)
-        print('expected number of prototype >= ', len(self.prototypes) // 2)
-        expected_proto = len(self.prototypes) // 2
-
-        self.make_hierarchy_hr(tau=self.tau, min_samples=223)
-        print(len(self.prototypes))
-        # print(len(self.hyper_rectangles))
-        print('expected number of prototype >= ', len(self.prototypes) // 2)
-        expected_proto = len(self.prototypes) // 2
-
-        self.make_hierarchy_hr(tau=0.04, min_samples=31)
-        print(len(self.prototypes))
-        # print(len(self.hyper_rectangles))
-        print('expected number of prototype >= ', len(self.prototypes) // 2)
-        expected_proto = len(self.prototypes) // 2
-
-        self.make_hierarchy_hr(tau=0.05, min_samples=30)
-        print(len(self.prototypes))
-        # print(len(self.hyper_rectangles))
-        print('expected number of prototype >= ', len(self.prototypes) // 2)
-        expected_proto = len(self.prototypes) // 2
-
-    def predict(self, X):
-
-        n_samples = X.shape[0]
-        y_new = np.ones(shape=n_samples, dtype=int) * -1
-
-        for i, data in enumerate(X):
-            new_hr = HyperRectangle(x=data, tau=self.tau, x_index=i)
-
-            for j, hr in enumerate(self.hyper_rectangles):
-                if hr.y == -1:
-                    continue
-
-                if new_hr.is_include(hr.hr_mid, None):
-                    y_new[i] = hr.y
-
-                    break
-
-        return y_new
-
 
         # old fit_predict method code
         # hyper_rectangles = list()
@@ -376,3 +413,37 @@ class HRHC:
         # self.tau = self.tau * 2
         # print(self.index)
         # print(self.tau)
+
+# print(len(self.prototypes))
+# # print(len(self.hyper_rectangles))
+# print('expected number of prototype >= ', len(self.prototypes) / 2)
+# expected_proto = len(self.prototypes) // 2
+#
+# n_proto = []
+#
+# for sam in trange(min_samples, max_proto):
+#     self.make_hierarchy_hr(tau=self.tau, min_samples=sam)
+#     # print(len(self.prototypes))
+#     n_proto.append(len(self.prototypes))
+#     expected_proto = len(self.prototypes) // 2
+#     n_proto_3 = []
+#     for sam3 in trange(sam, max_proto, 10):
+#         # print(sam3)
+#         nproto = self.make_hierarchy_hr(tau=self.tau, min_samples=sam3, is_change=False)
+#         n_proto_3.append(nproto)
+#         sleep(0.01)
+#     plt.plot(np.arange(len(n_proto_3)), n_proto_3)
+#     plt.xticks(np.arange(0, len(n_proto_3)+1, 10), np.arange(0, len(n_proto_3)+1, 10), rotation=45)
+#     plt.yticks(np.arange(0, len(n_proto_3)+1, 10), np.arange(0, len(n_proto_3)+1, 10))
+#     plt.grid()
+#     plt.show()
+#
+# self.make_hierarchy_hr(tau=0.045, min_samples=31)
+# print('expected number of prototype >= ', len(self.prototypes) // 2)
+# expected_proto = len(self.prototypes) // 2
+#
+# self.make_hierarchy_hr(tau=self.tau, min_samples=223)
+# print(len(self.prototypes))
+# # print(len(self.hyper_rectangles))
+# print('expected number of prototype >= ', len(self.prototypes) // 2)
+# expected_proto = len(self.prototypes) // 2

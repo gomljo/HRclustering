@@ -1,3 +1,4 @@
+import numpy as np
 
 
 class HyperRectangle:
@@ -25,10 +26,10 @@ class HyperRectangle:
 
         if is_in:
             self.covered_data_indexes.add(index)
-            # self.covered_data_indexes.add(x_neighbor.covered_data_indexes)
+
             return index
         # return is_in
 
     def __str__(self):
-        text = '-'*50 + '\n hr max: {} \n hr min: {} \n hr mid: {} \n R: {}\n Covered indexes: {}'.format(self.hr_max, self.hr_min, self.hr_mid, self.R, self.covered_data_indexes) + '-'*50
+        text = '-'*50 + '\n hr max: {} \n hr min: {} \n hr mid: {} \n R: {}\n Covered indexes: {}\n'.format(self.hr_max, self.hr_min, self.hr_mid, self.R, self.covered_data_indexes) + '-'*50
         return text

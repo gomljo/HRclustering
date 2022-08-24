@@ -45,6 +45,7 @@ def generate(type_, n_cluster=2, n_samples=500, n_features=2, n_clusters_per_cla
         # y's shape (n_samples,), so do reshape y' shape to (n_samples, 1)
 
         if n_features > 2:
+            print('Please check feature dimension. n_features <= 2 required')
             return None, None, None
 
         FILE_NAME = type_ + '_' + str(n_samples) + '_' + str(n_cluster) + '_' + str(n_features) + '.csv'

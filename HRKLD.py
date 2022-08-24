@@ -7,54 +7,24 @@ import numpy as np
 
 class HRHC:
 
-    def __init__(self, X=None, tau=0.1, index=None):
+    def __init__(self, X=None, tau=0.1, index=None, is_multi_var=False):
 
         self.prototypes = X
         self.X = X
         self.tau = tau
+
         self.labels_ = None
         self.core_sample_indices_ = None
+
         self.hyper_rectangles = deque()
         self.in_data = set([])
         self.index = index
+
         self.hierarchy_prototypes = deque()
         self.hierarchy_prototypes_index = deque()
         self.hierarchy_hyper_rectangles = deque()
-        # self.prototypes = list()
 
-    # def init_hr_list(self):
-    #
-    #     for hr_id in self.prototypes:
-
-    # def make_clusters(self):
-    #
-    #     cluster_index = 0
-    #
-    #     hr_list = deepcopy(self.hyper_rectangles)
-    #
-    #     hr_comp_list = list(combinations(hr_list, 2))
-    #
-    #     for hr in self.hyper_rectangles:
-    #         if hr.y is not None:
-    #             continue
-    #
-    #         hr.y = cluster_index
-    #
-    #         self._cluster_labeling(hr)
-    #
-    #         cluster_index += 1
-
-    # def _cluster_labeling(self, hr):
-    #
-    #     for neighbor_index in hr.covered_data_indexes:
-    #         hr_neighbor = self.hyper_rectangles[neighbor_index]
-    #         if hr_neighbor.y == -1:
-    #             hr_neighbor.y = hr.y
-    #             continue
-    #
-    #         if hr_neighbor.y is None:
-    #             hr_neighbor.y = hr.y
-    #             self._cluster_labeling(hr_neighbor)
+        self.is_multi_var = is_multi_var
 
     def get_hr_info(self, hr):
 
@@ -82,8 +52,32 @@ class HRHC:
     def get_multi_variate_prob_density(x_range, hr_var, hr_mean):
         return (1 / np.sqrt(2 * np.pi * hr_var)) * np.exp(-1 * ((x_range - hr_mean) ** 2 / (2 * hr_var)))
 
-    def get_info(self, hr1, hr2):
+    def pdf_multivariate_gauss(x_range, mu, cov):
+        """
+        Calculate the multivariate normal density (pdf)
 
+        Keyword arguments:
+            x = numpy array of a "d x 1" sample vector
+            mu = numpy array of a "d x 1" mean vector
+            cov = "numpy array of a d x d" covariance matrix
+        '"""
+        assert (mu.shape[0] > mu.shape[1]), 'mu must be a row vector'
+        assert (x_range.shape[0] > x_range.shape[1]), 'x must be a row vector'
+        assert (cov.shape[0] == cov.shape[1]), 'covariance matrix must be square'
+        assert (mu.shape[0] == cov.shape[0]), 'cov_mat and mu_vec must have the same dimensions'
+        assert (mu.shape[0] == x_range.shape[0]), 'mu and x must have the same dimensions'
+
+        part1 = 1 / (((2 * np.pi) ** (len(mu) / 2)) * (np.linalg.det(cov) ** (1 / 2)))
+        part2 = (-1 / 2) * ((x_range - mu).T.dot(np.linalg.inv(cov))).dot((x_range - mu))
+        return float(part1 * np.exp(part2))
+
+    def get_info(self, hr1, hr2):
+        """
+        :param hr1: hyper rectangle hr_i in self.hyper_rectangles[0]
+        :param hr2: hyper rectangle hr_j in self.hyper_rectangles[0]
+        :return: y1: [num. of feature dimension vector], y2: [num. of feature dimension vector],
+        dx: [num. of feature dimension vector],  x_min: [num. of feature dimension vector], x_max: [num. of feature dimension vector]
+        """
         num_dx = 1000
 
         hr1_max, hr1_min, hr1_mean, hr1_var = self.get_hr_info(hr1)
@@ -113,7 +107,7 @@ class HRHC:
         # calculate KL-Divergence between dist1 and dist2
         return np.sum(np.where(dist1 != 0, dist1 * np.log(dist1 / dist2) * dx, 0))
 
-    def merging(self, hr1, hr2, x_min, x_max):
+    def merging(self, x_min, x_max):
         """
         question on this process
         which point can be prototype for merging two hyper rectangle
@@ -122,33 +116,42 @@ class HRHC:
         solution (2) assign to new hr's prototype to hr2's prototype (X)
         solution (3) assign to new hr's prototype to mean value of hr1's prototype and hr2's prototype (O)
         """
-        new_tau = (x_max - x_min) / 2.0
+        new_prototype = (x_max - x_min) / 2.0
+        new_tau = x_max - x_min
+        new_hr = HyperRectangle(x=new_prototype, tau=new_tau)
 
-        # new_hr = HyperRectangle(x=hr1.hr_mid, x_index=hr1.x_idx, tau=)
+        return new_hr
 
     def make_cluster(self):
 
         # this method makes sub cluster.
         # Each execution makes cluster hierarchy
         # and need to eliminate merging hyper rectangles. => use self.in_data
-        for idx1, hr1 in enumerate(self.hyper_rectangles):
+
+        # 병합을 위한 KLD 값의 순위를 구하려면 인덱스: KLD 형태의 딕셔너리 구조로 구현하는 것이 유리할 것 같다.
+
+        for idx1, hr1 in enumerate(self.hyper_rectangles[0]):
             max_kld_exp = 0
             max_kld_idx = 0
-            for idx2, hr2 in enumerate(self.hyper_rectangles):
+            kld_dict = dict()
+            for idx2, hr2 in enumerate(self.hyper_rectangles[0]):
                 if idx1 == idx2:
                     continue
                 # variable y is list type and represent normal distribution on min value and max value of two hyper
                 # rectangles which hr1 and hr2
+                # returned value is num. of feature dimension vector
+                # so, you need to specify mode that is one variate norm distribution or multi variate norm distribution
+
                 y1, y2, dx, min_x, max_x = self.get_info(hr1, hr2)
 
                 kld_exp = np.exp(-self.KLD(y1, y2, dx))
 
-                if max_kld_exp < kld_exp:
-                    max_kld_exp = kld_exp
-                    max_kld_idx = idx2
+                kld_dict[idx2] = kld_exp
 
+                sort_kld_dict = sorted(kld_dict.items(), reverse=True)
+                print(sort_kld_dict)
 
-    def find_noise(self, x, index, min_samples):
+    def find_HR(self, x, index, min_samples):
 
         hr = HyperRectangle(x=x, tau=self.tau, x_index=index)
 
@@ -183,15 +186,18 @@ class HRHC:
         self.hierarchy_prototypes_index.appendleft(prototypes_index)
         self.index = self.hierarchy_prototypes_index[0]
 
-    def fit_predict(self, min_samples=3):
+    def fit_predict(self, min_samples=3, ranking=2):
 
         hyper_rectangles = list()
 
         for index, x in zip(self.index, self.prototypes):
 
-            hr = self.find_noise(x=x, index=index, min_samples=min_samples)
+            hr = self.find_HR(x=x, index=index, min_samples=min_samples)
             if hr is not None:
                 hyper_rectangles.append(hr)
+        self.hyper_rectangles.appendleft(hyper_rectangles)
+
+        self.make_cluster()
 
     def predict(self, X):
 
