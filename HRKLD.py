@@ -156,7 +156,6 @@ class HRHC:
         hr = HyperRectangle(x=x, tau=self.tau, x_index=index)
 
         for idx, neighbor in zip(self.index, self.prototypes):
-
             if index == idx:
                 continue
             # elif idx in self.in_data:
@@ -166,9 +165,26 @@ class HRHC:
         if len(hr.covered_data_indexes) < min_samples:
             hr.y = -1
             return None
-
+        # hr.covered_data_indexes.add(self.hyper_rectangles[0][index].covered_data_indexes)
         return hr
 
+    # def find_HR(self, x, index, min_samples):
+    #
+    #     hr = HyperRectangle(x=x, tau=self.tau, x_index=index)
+    #
+    #     for idx, neighbor in zip(self.index, self.prototypes):
+    #         if index == idx:
+    #             continue
+    #         # elif idx in self.in_data:
+    #         #     continue
+    #         dup_ind = hr.is_include(neighbor, idx)
+    #
+    #     if len(hr.covered_data_indexes) < min_samples:
+    #         hr.y = -1
+    #         return None
+    #     # hr.covered_data_indexes.add(self.hyper_rectangles[0][index].covered_data_indexes)
+    #     return hr
+    #
     def get_prototypes(self):
         prototypes = list()
         prototypes_index = list()

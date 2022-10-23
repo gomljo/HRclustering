@@ -1,0 +1,4 @@
+2022_09_13_02_54_22
+Dataset Name: iris
+my model
+best min pts:2, best time: 0.08377504348754883, num. of cluster: 50, best ARI: 0.06091368734901348

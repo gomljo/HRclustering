@@ -1,0 +1,10 @@
+2022_09_16_10_20_53
+Dataset Name: wine
+HR-DBSCAN
+best min pts:16, best time: 0.14159536361694336, num. of cluster: 2, best ARI: 0.5101183594597096, best NMI: 0.6030765073182768
+DBSCAN
+best min pts:23, best eps: 0.51, best time: 0.0009961128234863281, num. of cluster: 3, best ARI: 0.5378772218486452, best NMI: 0.5982277911058249
+HDBSCAN
+best min pts:4, best eps: 0.01, best time: 0.003989219665527344, num. of cluster: 3, best ARI: 0.37407992100275095, best NMI: 0.46206742074045215
+HR-DBSCAN
+best min pts:13, best eps: 0.28, best time: 0.05884265899658203, num. of cluster: 6, best ARI: 0.4216702966477159, best NMI: 0.49524566695626593

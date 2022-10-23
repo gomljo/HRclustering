@@ -1,0 +1,10 @@
+2022_09_16_10_12_01
+Dataset Name: iris
+HR-DBSCAN
+best min pts:14, best time: 0.10471987724304199, num. of cluster: 3, best ARI: 0.5930042942132686, best NMI: 0.6946530558333525
+DBSCAN
+best min pts:9, best eps: 0.13, best time: 0.0009963512420654297, num. of cluster: 3, best ARI: 0.6246390901537793, best NMI: 0.0
+HDBSCAN
+best min pts:2, best eps: 0.01, best time: 0.00892782211303711, num. of cluster: 2, best ARI: 0.5681159420289855, best NMI: 0.0
+HR-DBSCAN
+best min pts:28, best eps: 0.17, best time: 0.03889656066894531, num. of cluster: 4, best ARI: 0.618038864382581, best NMI: 0.0

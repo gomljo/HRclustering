@@ -2,7 +2,8 @@ from HR_TREE.Hyper_Rectangle import HyperRectangle
 
 import numpy as np
 from itertools import product, combinations
-from copy import deepcopy
+from tqdm import tqdm
+
 
 class HR_clustering:
 
@@ -35,6 +36,7 @@ class HR_clustering:
     def fit_predict(self, min_samples=3):
 
         self.find_noise(min_samples)
+        # print('done')
         self.make_clusters()
 
         y_pred = list()
@@ -54,19 +56,25 @@ class HR_clustering:
     def make_clusters(self):
 
         cluster_index = 0
-
+        is_change_label = False
         for hr in self.hyper_rectangles:
-            if hr.y is not None:
-                continue
 
-            hr.y = cluster_index
+            if hr.y is None:
+                hr.y = cluster_index
+                is_change_label = True
+
+            elif hr.y == -1:
+                # is_change_label = True
+                continue
 
             self._cluster_labeling(hr)
 
-            cluster_index += 1
+            if is_change_label:
+                is_change_label = False
+                cluster_index += 1
 
     def _cluster_labeling(self, hr):
-
+        # print(len(hr.covered_data_indexes))
         for neighbor_index in hr.covered_data_indexes:
             hr_neighbor = self.hyper_rectangles[neighbor_index]
             if hr_neighbor.y == -1:
@@ -75,12 +83,12 @@ class HR_clustering:
 
             if hr_neighbor.y is None:
                 hr_neighbor.y = hr.y
-                self._cluster_labeling(hr_neighbor)
+                # self._cluster_labeling(hr_neighbor)
 
     def find_noise(self, min_samples):
 
         for index, x in enumerate(self.X_data):
-            # print(x)
+
             hr = HyperRectangle(x=x, tau=self.tau, x_index=index)
 
             for idx, neighbor in enumerate(self.X_data):

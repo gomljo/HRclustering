@@ -1,0 +1,10 @@
+2022_09_13_06_14_36
+Dataset Name: yeast
+my model
+best min pts:16, best time: 7.046067714691162, num. of cluster: 15, best ARI: 0.06102285745020769
+DBSCAN
+best min pts:83, best time: 0.04188203811645508, num. of cluster: 2, best ARI: 0.07366077595447275
+HDBSCAN
+best min pts:2, best time: 0.07681941986083984, num. of cluster: 3, best ARI: 0.011631776325701067
+HR-DBSCAN
+best min pts:33, best time: 2.7613492012023926, num. of cluster: 11, best ARI: 0.1505872973230447

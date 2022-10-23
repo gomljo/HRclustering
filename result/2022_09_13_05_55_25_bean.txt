@@ -1,0 +1,10 @@
+2022_09_13_05_55_25
+Dataset Name: glass
+my model
+best min pts:4, best time: 0.182509183883667, num. of cluster: 15, best ARI: 0.06552491538512636
+DBSCAN
+best min pts:9, best time: 0.0019927024841308594, num. of cluster: 3, best ARI: 0.2593550707267869
+HDBSCAN
+best min pts:3, best time: 0.005012989044189453, num. of cluster: 4, best ARI: 0.2589485769058266
+HR-DBSCAN
+best min pts:38, best time: 0.10172796249389648, num. of cluster: 2, best ARI: 0.24627035812149425
